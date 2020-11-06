@@ -36,7 +36,7 @@ def on_connect(client, userdata, flags, rc):
 
 # The callback for when a PUBLISH message is received from the server.
 def on_message(client, userdata, msg):
-    print(msg.topic+" "+str(msg.payload))
+    print(msg.topic)
  
 # this is the syntax to follow for the elasticSearch update taken from documentation
 #    es.index(index="my-index", doc_type="test-type", id=42, body={"any": +str(msg.payload, "timestamp": datetime.now()})
@@ -49,10 +49,15 @@ def on_message(client, userdata, msg):
         es.index(index="de4l-timmi-index", doc_type="measurement", body={"topic" : msg.topic, "data" : result, "timestamp": datetime.utcnow()})
     	
     except:
-        es.index(index="my-index", doc_type="measurement_error", body={"topic" : msg.topic, "dataString" : msg.payload, "timestamp": datetime.utcnow()})
+        try:
+            es.index(index="my-index", doc_type="measurement_error", body={"topic" : msg.topic, "dataString" : msg.payload, "timestamp": datetime.utcnow()})
+        except:
+            print("another error occured,while logging error..")
     
 # by default we connect to elasticSearch on localhost:9200
-es = Elasticsearch( host=elasticHost )
+es = Elasticsearch( elasticHost )
+es.index(index="debugging-index", doc_type="string", body={"topic":  "welcome", "dataString": "Server is up", "timestamp": datetime.utcnow()})
+
 
 client = mqtt.Client()
 client.on_connect = on_connect

@@ -2,10 +2,15 @@ version: '3'
 
 services:
   mqqtt_to_el:
+    build:
+      .
     env_file:
       - .env
     depends_on:
       - elasticsearch-local
+        #    entrypoint: ["sh", "-c", "sleep 2073600"]
+    networks:
+      - internal_default
   elasticsearch-local:
     container_name: elasticsearch-local
     environment:
@@ -13,9 +18,39 @@ services:
       - "http.cors.enabled=true"
       - "http.cors.allow-origin=*"
     image: "docker.elastic.co/elasticsearch/elasticsearch:7.0.0"
-    ports:
-    - 9200:9200
-    - 9300:9300
+    networks:
+      - internal_default
+      - traefik
     volumes:
-    - "./data:/usr/share/elasticsearch/data"
-    - "./config:/usr/share/elasticsearch/config"
+      - "./data:/usr/share/elasticsearch/data"
+      - "./config:/usr/share/elasticsearch/config"
+    labels:
+      - "traefik.enable=false"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.services.elasticsearch.loadbalancer.server.port=9200"
+      - "traefik.http.routers.elasticsearch.service=elasticsearch"
+      - "traefik.http.routers.elasticsearch.rule=Host(`elastic.de4l.timmi.gra.one`)"
+      - "traefik.http.routers.elasticsearch.entrypoints=websecure"
+      - "traefik.http.routers.elasticsearch.tls.certresolver=myresolver"
+  frontend:
+    image: httpd:2.4
+    volumes:
+      - "./frontend:/usr/local/apache2/htdocs"
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=false"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.service=frontend"
+      - "traefik.http.routers.frontend.rule=Host(`map.de4l.timmi.gra.one`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=myresolver"
+     
+      
+      
+
+networks:
+  internal_default:
+  traefik:
+    external: true    
